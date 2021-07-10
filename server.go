@@ -231,12 +231,9 @@ func decode(data []byte) (map[string]string, error) {
 		dv, err := base64.RawStdEncoding.DecodeString(v)
 		if err != nil {
 			return nil, err
-
-
+		}
 		returnData[string(dk)] = string(dv)
+
 	}
-
 	return returnData, nil
-
-
 }
