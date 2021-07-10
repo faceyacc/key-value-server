@@ -7,14 +7,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/go-chi/chi/v5"
 )
 
 var (
-	data    = map[string]string{}
-	RWMutex = sync.RWMutex{}
+	StoragePath = "/tmp"
+	RWMutex     = sync.RWMutex{}
 )
 
 func main() {
@@ -108,6 +109,9 @@ func Set(ctx context.Context, key, body string) error {
 	RWMutex.RLock()
 	data[key] = body
 	RWMutex.RUnlock()
+
+	saveData(ctx, data)
+
 	return nil
 }
 
@@ -136,5 +140,66 @@ func Delete(ctx context.Context, key string) error {
 	RWMutex.RLock()
 	delete(data, key)
 	RWMutex.RUnlock()
+
+	saveData(ctx, data)
 	return nil
+}
+
+func dataPath() string {
+	return filepath.Join(StoragePath, "data.json")
+}
+
+func loadData(ctx context.Context) (map[string]string, error) {
+	empty := map[string]string{}
+
+	emptyData, err := encode(map[string]string{})
+	if err != nil {
+		return empty, err
+	}
+
+	// Check if folder exist if not create one.
+	if _, err = os.Stat(StoragePath); os.IsNotExist(err) {
+		err = os.MkdirAll(StoragePath, 0755)
+		if err != nil {
+			return empty, err
+		}
+	}
+
+	if _, err = os.Stat(dataPath()); os.IsNotExist(err) {
+		err := os.WriteFile(dataPath(), emptyData, 0644)
+		if err != nil {
+			return empty, err
+		}
+	}
+
+	content, err := os.ReadFile(dataPath())
+	if err != nil {
+		return empty, err
+	}
+
+	return decode(content)
+
+}
+
+func saveData(ctx context.Context, data map[string]string) error {
+	// check if folder exist, if not create one.
+
+	if _, err := os.Stat(StoragePath); os.IsNotExist(err) {
+		os.MkdirAll(StoragePath, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	encodedData, err := encode(data)
+	if err != nil {
+		return err
+	}
+
+	// write encoded data to file.
+	return os.WriteFile(dataPath(), encodedData, 0644)
+}
+
+func encode(data map[string]string) ([]byte, error) {
+
 }
