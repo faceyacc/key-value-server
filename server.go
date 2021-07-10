@@ -214,7 +214,7 @@ func encode(data map[string]string) ([]byte, error) {
 }
 
 func decode(data []byte) (map[string]string, error) {
-	var jsonData := map[string]string
+	var jsonData map[string]string
 
 	if err := json.Unmarshal(data, &jsonData); err != nil {
 		return nil, err
