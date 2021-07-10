@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"log"
@@ -200,6 +201,42 @@ func saveData(ctx context.Context, data map[string]string) error {
 	return os.WriteFile(dataPath(), encodedData, 0644)
 }
 
+// encode and decode handles marhsalling and unmarshalling of data formats.
 func encode(data map[string]string) ([]byte, error) {
+
+	encodedData := map[string]string{}
+	for k, v := range data {
+		ek := base64.URLEncoding.EncodeToString([]byte(k))
+		ev := base64.URLEncoding.EncodeToString([]byte(v))
+		encodedData[ek] = ev
+	}
+	return json.Marshal(encodedData)
+}
+
+func decode(data []byte) (map[string]string, error) {
+	var jsonData := map[string]string
+
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return nil, err
+	}
+
+	returnData := map[string]string{}
+
+	for k, v := range jsonData {
+		dk, err := base64.RawStdEncoding.DecodeString(k)
+		if err != nil {
+			return nil, err
+		}
+
+		dv, err := base64.RawStdEncoding.DecodeString(v)
+		if err != nil {
+			return nil, err
+
+
+		returnData[string(dk)] = string(dv)
+	}
+
+	return returnData, nil
+
 
 }
