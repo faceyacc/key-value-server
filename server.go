@@ -143,7 +143,10 @@ func Delete(ctx context.Context, key string) error {
 	delete(data, key)
 	RWMutex.RUnlock()
 
-	saveData(ctx, data)
+	err = saveData(ctx, data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -188,7 +191,7 @@ func saveData(ctx context.Context, data map[string]string) error {
 	// check if folder exist, if not create one.
 
 	if _, err := os.Stat(StoragePath); os.IsNotExist(err) {
-		os.MkdirAll(StoragePath, 0755)
+		err := os.MkdirAll(StoragePath, 0755)
 		if err != nil {
 			return err
 		}
@@ -225,12 +228,12 @@ func decode(data []byte) (map[string]string, error) {
 	returnData := map[string]string{}
 
 	for k, v := range jsonData {
-		dk, err := base64.RawStdEncoding.DecodeString(k)
+		dk, err := base64.URLEncoding.DecodeString(k)
 		if err != nil {
 			return nil, err
 		}
 
-		dv, err := base64.RawStdEncoding.DecodeString(v)
+		dv, err := base64.URLEncoding.DecodeString(v)
 		if err != nil {
 			return nil, err
 		}

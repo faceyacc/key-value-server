@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -30,6 +33,21 @@ func TestGet(t *testing.T) {
 	makeStorage(t)
 	defer cleanupStorage(t)
 
+	key := "key"
+	value := "value"
+	encodedKey := base64.URLEncoding.EncodeToString([]byte(key))
+	encodedValue := base64.URLEncoding.EncodeToString([]byte(value))
+
+	fileContents, _ := json.Marshal(map[string]string{encodedKey: encodedValue})
+	os.WriteFile(StoragePath+"/data.json", fileContents, 0644)
+
+	got, err := Get(context.Background(), key)
+	if err != nil {
+		t.Errorf("Received unexpected error: %s", err)
+	}
+	if got != value {
+		t.Errorf("Got %s, expected %s", got, value)
+	}
 }
 
 func TestJSON(t *testing.T) {
