@@ -13,40 +13,74 @@ import (
 	"testing"
 )
 
-func makeStorage(t *testing.T) {
-	err := os.Mkdir("testdata", 0755)
-	if err != nil && !os.IsExist(err) {
-		t.Fatalf("Couldn't create directory testdata: %s", err)
+func TestGeTSetDelete(t *testing.T) {
+	makeStorage(t)
+	defer cleanupStorage(t)
+	ctx := context.Background()
+
+	key := "hell"
+	value := "world"
+
+	if out, err := Get(ctx, key); err != nil || out != "" {
+		t.Fatalf("First Get returned unexpected result, out: %q, error: %s", out, err)
 	}
 
-	StoragePath = "testdata"
-}
-
-func cleanupStorage(t *testing.T) {
-	if err := os.RemoveAll(StoragePath); err != nil {
-		t.Errorf("Failed to delete storage path: %s", StoragePath)
+	if err := Set(ctx, key, value); err != nil {
+		t.Fatalf("Set returned unexpected error: %s", err)
 	}
-	StoragePath = "/tmp/kv"
+
+	if out, err := Get(ctx, key); err != nil || out != value {
+		t.Fatalf("Second Get returned unexpected result, out: %q, error: %s", out, err)
+	}
+
+	if err := Delete(ctx, key); err != nil {
+		t.Fatalf("Delete returned unexpected error: %s", err)
+	}
+
+	if out, err := Get(ctx, key); err != nil || out != "" {
+		t.Fatalf("Third Get returned unexpected result, out: %q, error: %s", out, err)
+	}
+
 }
 
 func TestGet(t *testing.T) {
+
 	makeStorage(t)
 	defer cleanupStorage(t)
 
-	key := "key"
-	value := "value"
-	encodedKey := base64.URLEncoding.EncodeToString([]byte(key))
-	encodedValue := base64.URLEncoding.EncodeToString([]byte(value))
+	kvStore := map[string]string{
+		"key1": "value1",
+		"key2": "value2",
+		"key4": "value4",
+	}
+	encodedStore := map[string]string{}
+	for key, value := range kvStore {
+		encodedKey := base64.URLEncoding.EncodeToString([]byte(key))
+		encodedValue := base64.URLEncoding.EncodeToString([]byte(value))
+		encodedStore[encodedKey] = encodedValue
 
-	fileContents, _ := json.Marshal(map[string]string{encodedKey: encodedValue})
+	}
+	fileContents, _ := json.Marshal(encodedStore)
 	os.WriteFile(StoragePath+"/data.json", fileContents, 0644)
 
-	got, err := Get(context.Background(), key)
-	if err != nil {
-		t.Errorf("Received unexpected error: %s", err)
+	testCases := []struct {
+		in  string
+		out string
+		err error
+	}{
+		{"key1", "value1", nil},
+		{"key2", "value2", nil},
+		// {"key2", "", nil},
 	}
-	if got != value {
-		t.Errorf("Got %s, expected %s", got, value)
+
+	for _, test := range testCases {
+		got, err := Get(context.Background(), test.in)
+		if err != test.err {
+			t.Errorf("Error did not match expected. Got %s, expected: %s", err, test.err)
+		}
+		if got != test.out {
+			t.Errorf("Got %s, expected %s", got, test.out)
+		}
 	}
 }
 
@@ -101,4 +135,20 @@ func assertError(t testing.TB, got []byte, test string) {
 		t.Errorf("got %s expected %s", string(got), test)
 	}
 
+}
+
+func makeStorage(t *testing.T) {
+	err := os.Mkdir("testdata", 0755)
+	if err != nil && !os.IsExist(err) {
+		t.Fatalf("Couldn't create directory testdata: %s", err)
+	}
+
+	StoragePath = "testdata"
+}
+
+func cleanupStorage(t *testing.T) {
+	if err := os.RemoveAll(StoragePath); err != nil {
+		t.Errorf("Failed to delete storage path: %s", StoragePath)
+	}
+	StoragePath = "/tmp/kv"
 }
