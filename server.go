@@ -63,6 +63,7 @@ func main() {
 	r.Post("key/{key}", func(rw http.ResponseWriter, r *http.Request) {
 		key := chi.URLParam(r, "key")
 
+		// read user's request input to POST
 		body, err := io.ReadAll(r.Body)
 
 		if err != nil {
@@ -166,6 +167,7 @@ func loadData(ctx context.Context) (map[string]string, error) {
 		}
 	}
 
+	// Check if file exist if not create one.
 	if _, err = os.Stat(dataPath()); os.IsNotExist(err) {
 		err := os.WriteFile(dataPath(), emptyData, 0644)
 		if err != nil {
