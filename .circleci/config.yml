@@ -34,7 +34,6 @@ jobs:
           command: semgrep login; semgrep ci
 workflows:
   Semgrep:
-    semgrep-nightly:
     triggers:
       - schedule:
           cron: "0 0 * * *"
