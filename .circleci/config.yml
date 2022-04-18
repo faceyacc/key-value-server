@@ -33,7 +33,5 @@ jobs:
 workflows:
   Semgrep:
     jobs:
-      - semgrep-scan:
-          filters:
-            branches:
-              only: main
+      - semgrep-scan
+ 
