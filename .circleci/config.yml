@@ -3,13 +3,27 @@ version: 2.1
 jobs:
   semgrep-scan:
     parameters: 
+      repo_path:
+        type: string
+        default: org/repo
       diff_branch:
         type: string
         default: master
 
     environment:
-      # Scan changed files in PRs, block on new issues only (existing issues ignored)
+      # SEMGREP_RULES: >- # more at semgrep.dev/explore
+        # p/security-audit
+        # p/secrets
+
+        # Scan changed files in PRs, block on new issues only (existing issues ignored)
       SEMGREP_BASELINE_REF: << parameters.diff_branch >>
+
+        # == Optional settings in the environment: block
+
+      # Instead of SEMGREP_RULES:, use rules set in Semgrep App.
+      # Get your token from semgrep.dev/manage/settings.
+      # SEMGREP_APP_TOKEN: {SEMGREP_APP_TOKEN}
+      SEMGREP_REPO_NAME: << parameters.repo_path >>
       SEMGREP_REPO_URL: << pipeline.project.git_url >>
       SEMGREP_BRANCH: << pipeline.git.branch >>
 
@@ -21,16 +35,20 @@ jobs:
     steps:
       - checkout
       - run:
-          name: "Set environment variables" # for PR comments and  in-app hyperlinks to findings
+          name: "set environment variables"
           command: |
               echo 'export SEMGREP_COMMIT=$CIRCLE_SHA1' >> $BASH_ENV
               echo 'export SEMGREP_PR_ID=$CIRCLE_PR_NUMBER' >> $BASH_ENV
               echo 'export SEMGREP_JOB_URL=$CIRCLE_BUILD_URL' >> $BASH_ENV
-              echo 'export SEMGREP_REPO_NAME=$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME' >> $BASH_ENV
+      - run:
+          name: "print environment variables"
+          command: |
+              echo $SEMGREP_COMMIT
+              echo $SEMGREP_PR_ID
+              echo $SEMGREP_JOB_URL
       - run:
           name: "Semgrep scan"
           command: semgrep login; semgrep ci
-
 workflows:
   Semgrep:
     jobs:
