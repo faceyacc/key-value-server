@@ -33,4 +33,4 @@ jobs:
 workflows:
   Semgrep:
     jobs:
-      - semgrep-scan:
+      - semgrep-scan
